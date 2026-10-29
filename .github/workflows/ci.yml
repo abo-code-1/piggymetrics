@@ -22,7 +22,6 @@ jobs:
       - name: Build and run tests
         run: mvn --batch-mode --no-transfer-progress verify
       - name: Package deployment files
-        if: github.event_name == 'push' && github.ref == 'refs/heads/master'
         run: |
           tar -czf release.tar.gz docker-compose.deploy.yml \
             config/Dockerfile config/target/config.jar \
@@ -35,7 +34,6 @@ jobs:
             monitoring/Dockerfile monitoring/target/monitoring.jar \
             turbine-stream-service/Dockerfile turbine-stream-service/target/turbine-stream-service.jar
       - uses: actions/upload-artifact@v4
-        if: github.event_name == 'push' && github.ref == 'refs/heads/master'
         with:
           name: release
           path: release.tar.gz
