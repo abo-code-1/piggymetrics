@@ -1,0 +1,195 @@
+---
+version: '2.1'
+services:
+  rabbitmq:
+    image: rabbitmq:3-management
+    restart: always
+    logging:
+      options:
+        max-size: 10m
+        max-file: '10'
+  config:
+    environment:
+      CONFIG_SERVICE_PASSWORD: "$CONFIG_SERVICE_PASSWORD"
+    image: piggymetrics/config:${IMAGE_TAG:-local}
+    restart: always
+    logging:
+      options:
+        max-size: 10m
+        max-file: '10'
+    build:
+      context: "./config"
+  registry:
+    environment:
+      CONFIG_SERVICE_PASSWORD: "$CONFIG_SERVICE_PASSWORD"
+    image: piggymetrics/registry:${IMAGE_TAG:-local}
+    restart: always
+    depends_on:
+      config:
+        condition: service_healthy
+    logging:
+      options:
+        max-size: 10m
+        max-file: '10'
+    build:
+      context: "./registry"
+  gateway:
+    environment:
+      CONFIG_SERVICE_PASSWORD: "$CONFIG_SERVICE_PASSWORD"
+    image: piggymetrics/gateway:${IMAGE_TAG:-local}
+    restart: always
+    depends_on:
+      config:
+        condition: service_healthy
+    ports:
+    - 80:4000
+    logging:
+      options:
+        max-size: 10m
+        max-file: '10'
+    build:
+      context: "./gateway"
+  auth-service:
+    environment:
+      CONFIG_SERVICE_PASSWORD: "$CONFIG_SERVICE_PASSWORD"
+      NOTIFICATION_SERVICE_PASSWORD: "$NOTIFICATION_SERVICE_PASSWORD"
+      STATISTICS_SERVICE_PASSWORD: "$STATISTICS_SERVICE_PASSWORD"
+      ACCOUNT_SERVICE_PASSWORD: "$ACCOUNT_SERVICE_PASSWORD"
+      MONGODB_PASSWORD: "$MONGODB_PASSWORD"
+    image: piggymetrics/auth-service:${IMAGE_TAG:-local}
+    restart: always
+    depends_on:
+      config:
+        condition: service_healthy
+    logging:
+      options:
+        max-size: 10m
+        max-file: '10'
+    build:
+      context: "./auth-service"
+  auth-mongodb:
+    environment:
+      MONGODB_PASSWORD: "$MONGODB_PASSWORD"
+    image: sqshq/piggymetrics-mongodb@sha256:8c22387dcadf4639b02ff6e9fbc3c5ca6126884134b900536d7f891d892a9ee3
+    restart: always
+    logging:
+      options:
+        max-size: 10m
+        max-file: '10'
+    volumes:
+    - auth-mongodb-data:/data/db
+  account-service:
+    environment:
+      CONFIG_SERVICE_PASSWORD: "$CONFIG_SERVICE_PASSWORD"
+      ACCOUNT_SERVICE_PASSWORD: "$ACCOUNT_SERVICE_PASSWORD"
+      MONGODB_PASSWORD: "$MONGODB_PASSWORD"
+    image: piggymetrics/account-service:${IMAGE_TAG:-local}
+    restart: always
+    depends_on:
+      config:
+        condition: service_healthy
+    logging:
+      options:
+        max-size: 10m
+        max-file: '10'
+    build:
+      context: "./account-service"
+  account-mongodb:
+    environment:
+      INIT_DUMP: account-service-dump.js
+      MONGODB_PASSWORD: "$MONGODB_PASSWORD"
+    image: sqshq/piggymetrics-mongodb@sha256:8c22387dcadf4639b02ff6e9fbc3c5ca6126884134b900536d7f891d892a9ee3
+    restart: always
+    logging:
+      options:
+        max-size: 10m
+        max-file: '10'
+    volumes:
+    - account-mongodb-data:/data/db
+  statistics-service:
+    environment:
+      CONFIG_SERVICE_PASSWORD: "$CONFIG_SERVICE_PASSWORD"
+      MONGODB_PASSWORD: "$MONGODB_PASSWORD"
+      STATISTICS_SERVICE_PASSWORD: "$STATISTICS_SERVICE_PASSWORD"
+    image: piggymetrics/statistics-service:${IMAGE_TAG:-local}
+    restart: always
+    depends_on:
+      config:
+        condition: service_healthy
+    logging:
+      options:
+        max-size: 10m
+        max-file: '10'
+    build:
+      context: "./statistics-service"
+  statistics-mongodb:
+    environment:
+      MONGODB_PASSWORD: "$MONGODB_PASSWORD"
+    image: sqshq/piggymetrics-mongodb@sha256:8c22387dcadf4639b02ff6e9fbc3c5ca6126884134b900536d7f891d892a9ee3
+    restart: always
+    logging:
+      options:
+        max-size: 10m
+        max-file: '10'
+    volumes:
+    - statistics-mongodb-data:/data/db
+  notification-service:
+    environment:
+      CONFIG_SERVICE_PASSWORD: "$CONFIG_SERVICE_PASSWORD"
+      MONGODB_PASSWORD: "$MONGODB_PASSWORD"
+      NOTIFICATION_SERVICE_PASSWORD: "$NOTIFICATION_SERVICE_PASSWORD"
+    image: piggymetrics/notification-service:${IMAGE_TAG:-local}
+    restart: always
+    depends_on:
+      config:
+        condition: service_healthy
+    logging:
+      options:
+        max-size: 10m
+        max-file: '10'
+    build:
+      context: "./notification-service"
+  notification-mongodb:
+    image: sqshq/piggymetrics-mongodb@sha256:8c22387dcadf4639b02ff6e9fbc3c5ca6126884134b900536d7f891d892a9ee3
+    restart: always
+    environment:
+      MONGODB_PASSWORD: "$MONGODB_PASSWORD"
+    logging:
+      options:
+        max-size: 10m
+        max-file: '10'
+    volumes:
+    - notification-mongodb-data:/data/db
+  monitoring:
+    environment:
+      CONFIG_SERVICE_PASSWORD: "$CONFIG_SERVICE_PASSWORD"
+    image: piggymetrics/monitoring:${IMAGE_TAG:-local}
+    restart: always
+    depends_on:
+      config:
+        condition: service_healthy
+    logging:
+      options:
+        max-size: 10m
+        max-file: '10'
+    build:
+      context: "./monitoring"
+  turbine-stream-service:
+    environment:
+      CONFIG_SERVICE_PASSWORD: "$CONFIG_SERVICE_PASSWORD"
+    image: piggymetrics/turbine-stream-service:${IMAGE_TAG:-local}
+    restart: always
+    depends_on:
+      config:
+        condition: service_healthy
+    logging:
+      options:
+        max-size: 10m
+        max-file: '10'
+    build:
+      context: "./turbine-stream-service"
+volumes:
+  auth-mongodb-data: {}
+  account-mongodb-data: {}
+  statistics-mongodb-data: {}
+  notification-mongodb-data: {}
