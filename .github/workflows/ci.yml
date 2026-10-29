@@ -21,3 +21,57 @@ jobs:
           cache: maven
       - name: Build and run tests
         run: mvn --batch-mode --no-transfer-progress verify
+      - name: Package deployment files
+        run: |
+          tar -czf release.tar.gz docker-compose.deploy.yml \
+            config/Dockerfile config/target/config.jar \
+            registry/Dockerfile registry/target/registry.jar \
+            gateway/Dockerfile gateway/target/gateway.jar \
+            auth-service/Dockerfile auth-service/target/auth-service.jar \
+            account-service/Dockerfile account-service/target/account-service.jar \
+            statistics-service/Dockerfile statistics-service/target/statistics-service.jar \
+            notification-service/Dockerfile notification-service/target/notification-service.jar \
+            monitoring/Dockerfile monitoring/target/monitoring.jar \
+            turbine-stream-service/Dockerfile turbine-stream-service/target/turbine-stream-service.jar
+      - uses: actions/upload-artifact@v4
+        with:
+          name: release
+          path: release.tar.gz
+          retention-days: 7
+
+  deploy:
+    if: github.event_name == 'push' && github.ref == 'refs/heads/master'
+    needs: test
+    runs-on: ubuntu-22.04
+    concurrency:
+      group: piggymetrics-deployment
+      cancel-in-progress: false
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: release
+      - name: Configure SSH
+        env:
+          DEPLOY_KEY: ${{ secrets.DEPLOY_KEY }}
+          DEPLOY_KNOWN_HOSTS: ${{ secrets.DEPLOY_KNOWN_HOSTS }}
+        run: |
+          install -d -m 700 ~/.ssh
+          printf '%s\n' "$DEPLOY_KEY" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          printf '%s\n' "$DEPLOY_KNOWN_HOSTS" > ~/.ssh/known_hosts
+      - name: Deploy to VM
+        env:
+          DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
+          DEPLOY_USER: ${{ secrets.DEPLOY_USER }}
+        run: |
+          set -eu
+          dest="$DEPLOY_USER@$DEPLOY_HOST"
+          release="/home/$DEPLOY_USER/piggymetrics/releases/$GITHUB_SHA"
+          ssh -i ~/.ssh/deploy_key -o StrictHostKeyChecking=yes "$dest" "mkdir -p '$release' && tar -xzf - -C '$release'" < release.tar.gz
+          ssh -i ~/.ssh/deploy_key -o StrictHostKeyChecking=yes "$dest" "cd '$release' && sudo env IMAGE_TAG='$GITHUB_SHA' docker compose --env-file /home/$DEPLOY_USER/piggymetrics/.env -p piggymetrics -f docker-compose.deploy.yml up -d --build"
+          for attempt in $(seq 1 36); do
+            if ssh -i ~/.ssh/deploy_key -o StrictHostKeyChecking=yes "$dest" 'curl -fsS -o /dev/null --max-time 5 http://127.0.0.1/'; then exit 0; fi
+            sleep 10
+          done
+          echo 'Gateway did not become ready in time' >&2
+          exit 1

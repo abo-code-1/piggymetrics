@@ -29,7 +29,7 @@ public class Account {
 	@NotNull
 	private Saving saving;
 
-	@Length(min = 0, max = 20_000)
+	@Length(min = 0, max = 20000)
 	private String note;
 
 	public String getName() {
