@@ -96,10 +96,7 @@ public class AccountServiceImpl implements AccountService {
 		log.debug("account {} changes has been saved", name);
 		statisticsClient.updateStatistics(name, account);
 
-
-
-
-
-
+		return new AccountResponseDTO(account);
+			
 	}
 }
