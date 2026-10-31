@@ -3,16 +3,14 @@ package com.piggymetrics.account.controller;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.ImmutableList;
 import com.piggymetrics.account.domain.*;
+import com.piggymetrics.account.dto.AccountResponseDTO;
 import com.piggymetrics.account.service.AccountService;
 import com.sun.security.auth.UserPrincipal;
 import org.junit.Before;
 import org.junit.Test;
-import org.junit.runner.RunWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
-import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
-import org.springframework.test.context.junit4.SpringRunner;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
@@ -25,8 +23,6 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-@RunWith(SpringRunner.class)
-@SpringBootTest
 public class AccountControllerTest {
 
 	private static final ObjectMapper mapper = new ObjectMapper();
@@ -48,8 +44,7 @@ public class AccountControllerTest {
 	@Test
 	public void shouldGetAccountByName() throws Exception {
 
-		final Account account = new Account();
-		account.setName("test");
+		final AccountResponseDTO account = AccountResponseDTO.builder().name("test").build();
 
 		when(accountService.findByName(account.getName())).thenReturn(account);
 
@@ -61,8 +56,7 @@ public class AccountControllerTest {
 	@Test
 	public void shouldGetCurrentAccount() throws Exception {
 
-		final Account account = new Account();
-		account.setName("test");
+		final AccountResponseDTO account = AccountResponseDTO.builder().name("test").build();
 
 		when(accountService.findByName(account.getName())).thenReturn(account);
 

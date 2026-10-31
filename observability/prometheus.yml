@@ -1,0 +1,77 @@
+global:
+  scrape_interval: 15s
+  scrape_timeout: 10s
+
+scrape_configs:
+  - job_name: prometheus
+    static_configs:
+      - targets: ['prometheus:9090']
+  - job_name: blackbox-exporter
+    static_configs:
+      - targets: ['blackbox-exporter:9115']
+  - job_name: piggymetrics-http
+    metrics_path: /probe
+    params:
+      module: [http_2xx]
+    static_configs:
+      - targets: ['http://gateway:4000/']
+        labels:
+          service: gateway
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: __param_target
+      - source_labels: [__param_target]
+        target_label: instance
+      - target_label: __address__
+        replacement: blackbox-exporter:9115
+  - job_name: piggymetrics-tcp
+    metrics_path: /probe
+    params:
+      module: [tcp_connect]
+    static_configs:
+      - targets: ['config:8888']
+        labels:
+          service: config
+      - targets: ['registry:8761']
+        labels:
+          service: registry
+      - targets: ['auth-service:5000']
+        labels:
+          service: auth-service
+      - targets: ['account-service:6000']
+        labels:
+          service: account-service
+      - targets: ['statistics-service:7000']
+        labels:
+          service: statistics-service
+      - targets: ['notification-service:8000']
+        labels:
+          service: notification-service
+      - targets: ['monitoring:8080']
+        labels:
+          service: monitoring
+      - targets: ['turbine-stream-service:8080']
+        labels:
+          service: turbine-stream-service
+      - targets: ['rabbitmq:5672']
+        labels:
+          service: rabbitmq
+      - targets: ['auth-mongodb:27017']
+        labels:
+          service: auth-mongodb
+      - targets: ['account-mongodb:27017']
+        labels:
+          service: account-mongodb
+      - targets: ['statistics-mongodb:27017']
+        labels:
+          service: statistics-mongodb
+      - targets: ['notification-mongodb:27017']
+        labels:
+          service: notification-mongodb
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: __param_target
+      - source_labels: [__param_target]
+        target_label: instance
+      - target_label: __address__
+        replacement: blackbox-exporter:9115

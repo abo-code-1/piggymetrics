@@ -1,0 +1,38 @@
+# Local JVM tuning so all 9 Java services fit in a 4 GB Docker VM on an 8 GB Apple Silicon Mac.
+# The images are amd64 and run under Rosetta, which makes each JVM noticeably larger.
+# Docker Compose merges this file automatically; delete it and run `docker compose up -d` to revert.
+#
+#   UseSerialGC            one GC thread instead of one per CPU
+#   TieredStopAtLevel=1    C1 JIT only: far less CPU and code cache at startup, fine for local dev
+#   ReservedCodeCacheSize  C1 needs much less than the default 240 MB
+#   MaxMetaspaceSize       caps class metadata (Spring Cloud needs ~100 MB)
+#   Xss256k                smaller thread stacks (Tomcat starts many threads)
+#   MaxDirectMemorySize    caps off-heap buffers
+x-jvm-env: &jvm-env
+  JAVA_TOOL_OPTIONS: >-
+    -XX:+UseSerialGC
+    -XX:TieredStopAtLevel=1
+    -XX:ReservedCodeCacheSize=48m
+    -XX:MaxMetaspaceSize=160m
+    -Xss256k
+    -XX:MaxDirectMemorySize=64m
+
+services:
+  config:
+    environment: *jvm-env
+  registry:
+    environment: *jvm-env
+  gateway:
+    environment: *jvm-env
+  auth-service:
+    environment: *jvm-env
+  account-service:
+    environment: *jvm-env
+  statistics-service:
+    environment: *jvm-env
+  notification-service:
+    environment: *jvm-env
+  monitoring:
+    environment: *jvm-env
+  turbine-stream-service:
+    environment: *jvm-env

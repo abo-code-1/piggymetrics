@@ -1,11 +1,13 @@
 package com.piggymetrics.account.domain;
 
 import javax.validation.constraints.NotNull;
+import javax.validation.constraints.DecimalMin;
 import java.math.BigDecimal;
 
 public class Saving {
 
 	@NotNull
+	@DecimalMin(value = "0.0")
 	private BigDecimal amount;
 
 	@NotNull

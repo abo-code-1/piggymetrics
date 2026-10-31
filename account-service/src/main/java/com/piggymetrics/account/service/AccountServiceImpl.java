@@ -6,10 +6,12 @@ import com.piggymetrics.account.domain.Account;
 import com.piggymetrics.account.domain.Currency;
 import com.piggymetrics.account.domain.Saving;
 import com.piggymetrics.account.domain.User;
+import com.piggymetrics.account.dto.AccountRequestDTO;
+import com.piggymetrics.account.dto.AccountResponseDTO;
 import com.piggymetrics.account.repository.AccountRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
 import org.springframework.util.Assert;
 
@@ -21,33 +23,37 @@ public class AccountServiceImpl implements AccountService {
 
 	private final Logger log = LoggerFactory.getLogger(getClass());
 
-	@Autowired
-	private StatisticsServiceClient statisticsClient;
+	private final StatisticsServiceClient statisticsClient;
+	private final  AuthServiceClient authClient;
+	private final AccountRepository repository;
 
-	@Autowired
-	private AuthServiceClient authClient;
-
-	@Autowired
-	private AccountRepository repository;
-
+	public AccountServiceImpl (@Qualifier("com.piggymetrics.account.client.StatisticsServiceClient") StatisticsServiceClient statisticsClient,
+                               AuthServiceClient authClient,
+                               AccountRepository repository) {
+		this.statisticsClient = statisticsClient;
+		this.authClient = authClient;
+		this.repository = repository;
+	}
 	/**
 	 * {@inheritDoc}
 	 */
 	@Override
-	public Account findByName(String accountName) {
+	public AccountResponseDTO findByName(String accountName) {
 		Assert.hasLength(accountName);
-		return repository.findByName(accountName);
+		return repository.findById(accountName)
+				.map(AccountResponseDTO::new)
+				.orElse(null);
 	}
 
 	/**
 	 * {@inheritDoc}
 	 */
 	@Override
-	public Account create(User user) {
+	public AccountResponseDTO create(User user) {
 
-		Account existing = repository.findByName(user.getUsername());
-		Assert.isNull(existing, "account already exists: " + user.getUsername());
-
+		if (repository.existsById(user.getUsername())) {
+			throw new IllegalArgumentException("account already exists: " + user.getUsername());
+		}
 		authClient.createUser(user);
 
 		Saving saving = new Saving();
@@ -66,17 +72,19 @@ public class AccountServiceImpl implements AccountService {
 
 		log.info("new account has been created: " + account.getName());
 
-		return account;
+		return new AccountResponseDTO(account);
 	}
 
 	/**
 	 * {@inheritDoc}
 	 */
 	@Override
-	public void saveChanges(String name, Account update) {
-
-		Account account = repository.findByName(name);
-		Assert.notNull(account, "can't find account with name " + name);
+	public AccountResponseDTO saveChanges(String name, AccountRequestDTO update) {
+		Account account = repository.findById(name)
+				.orElseThrow(() -> {
+					log.error("account {} not found", name);
+					return new IllegalArgumentException("account not found: " + name);
+				});
 
 		account.setIncomes(update.getIncomes());
 		account.setExpenses(update.getExpenses());
@@ -86,7 +94,12 @@ public class AccountServiceImpl implements AccountService {
 		repository.save(account);
 
 		log.debug("account {} changes has been saved", name);
-
 		statisticsClient.updateStatistics(name, account);
+
+
+
+
+
+
 	}
 }
