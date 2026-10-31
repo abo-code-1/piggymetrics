@@ -3,6 +3,8 @@ package com.piggymetrics.account.service;
 import com.piggymetrics.account.client.AuthServiceClient;
 import com.piggymetrics.account.client.StatisticsServiceClient;
 import com.piggymetrics.account.domain.*;
+import com.piggymetrics.account.dto.AccountRequestDTO;
+import com.piggymetrics.account.dto.AccountResponseDTO;
 import com.piggymetrics.account.repository.AccountRepository;
 import org.junit.Before;
 import org.junit.Test;
@@ -11,6 +13,7 @@ import org.mockito.Mock;
 
 import java.math.BigDecimal;
 import java.util.Arrays;
+import java.util.Optional;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
@@ -42,10 +45,10 @@ public class AccountServiceTest {
 		final Account account = new Account();
 		account.setName("test");
 
-		when(accountService.findByName(account.getName())).thenReturn(account);
-		Account found = accountService.findByName(account.getName());
+		when(repository.findById(account.getName())).thenReturn(Optional.of(account));
+		AccountResponseDTO found = accountService.findByName(account.getName());
 
-		assertEquals(account, found);
+		assertEquals(account.getName(), found.getName());
 	}
 
 	@Test(expected = IllegalArgumentException.class)
@@ -59,7 +62,7 @@ public class AccountServiceTest {
 		User user = new User();
 		user.setUsername("test");
 
-		Account account = accountService.create(user);
+		AccountResponseDTO account = accountService.create(user);
 
 		assertEquals(user.getUsername(), account.getName());
 		assertEquals(0, account.getSaving().getAmount().intValue());
@@ -70,7 +73,7 @@ public class AccountServiceTest {
 		assertNotNull(account.getLastSeen());
 
 		verify(authClient, times(1)).createUser(user);
-		verify(repository, times(1)).save(account);
+		verify(repository, times(1)).save(any(Account.class));
 	}
 
 	@Test
@@ -97,16 +100,16 @@ public class AccountServiceTest {
 		saving.setDeposit(true);
 		saving.setCapitalization(false);
 
-		final Account update = new Account();
-		update.setName("test");
-		update.setNote("test note");
-		update.setIncomes(Arrays.asList(salary));
-		update.setExpenses(Arrays.asList(grocery));
-		update.setSaving(saving);
+		final AccountRequestDTO update = AccountRequestDTO.builder()
+				.note("test note")
+				.incomes(Arrays.asList(salary))
+				.expenses(Arrays.asList(grocery))
+				.saving(saving)
+				.build();
 
 		final Account account = new Account();
 
-		when(accountService.findByName("test")).thenReturn(account);
+		when(repository.findById("test")).thenReturn(Optional.of(account));
 		accountService.saveChanges("test", update);
 
 		assertEquals(update.getNote(), account.getNote());
@@ -139,11 +142,12 @@ public class AccountServiceTest {
 
 	@Test(expected = IllegalArgumentException.class)
 	public void shouldFailWhenNoAccountsExistedWithGivenName() {
-		final Account update = new Account();
-		update.setIncomes(Arrays.asList(new Item()));
-		update.setExpenses(Arrays.asList(new Item()));
+		final AccountRequestDTO update = AccountRequestDTO.builder()
+				.incomes(Arrays.asList(new Item()))
+				.expenses(Arrays.asList(new Item()))
+				.build();
 
-		when(accountService.findByName("test")).thenReturn(null);
+		when(repository.findById("test")).thenReturn(Optional.empty());
 		accountService.saveChanges("test", update);
 	}
 }

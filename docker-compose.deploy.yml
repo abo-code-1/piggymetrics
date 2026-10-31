@@ -188,6 +188,15 @@ services:
         max-file: '10'
     build:
       context: "./turbine-stream-service"
+  zipkin:
+    image: openzipkin/zipkin-slim
+    restart: always
+    environment:
+      JAVA_OPTS: "-Xms64m -Xmx256m"
+    logging:
+      options:
+        max-size: 10m
+        max-file: '10'
 volumes:
   auth-mongodb-data: {}
   account-mongodb-data: {}

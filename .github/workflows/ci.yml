@@ -19,8 +19,15 @@ jobs:
           distribution: temurin
           java-version: '8'
           cache: maven
-      - name: Build and run tests
-        run: mvn --batch-mode --no-transfer-progress verify
+      - name: Build and test Java 8 services
+        run: mvn --batch-mode --no-transfer-progress verify -pl '!account-service'
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: maven
+      - name: Build and test account-service
+        run: mvn --batch-mode --no-transfer-progress verify -pl account-service -am
       - name: Package deployment files
         run: |
           tar -czf release.tar.gz docker-compose.deploy.yml \

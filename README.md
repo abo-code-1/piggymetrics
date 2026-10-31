@@ -176,6 +176,9 @@ public interface StatisticsServiceClient {
 
 ### Monitor dashboard
 
+For Grafana with Prometheus and a provisioned service availability dashboard,
+see the [Grafana setup guide](observability/README.md).
+
 In this project configuration, each microservice with Hystrix on board pushes metrics to Turbine via Spring Cloud Bus (with AMQP broker). The Monitoring project is just a small Spring boot application with the [Turbine](https://github.com/Netflix/Turbine) and [Hystrix Dashboard](https://github.com/Netflix-Skunkworks/hystrix-dashboard).
 
 Let's see observe the behavior of our system under load: Statistics Service imitates a delay during the request processing. The response timeout is set to 1 second:

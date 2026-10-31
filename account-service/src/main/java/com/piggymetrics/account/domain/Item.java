@@ -2,16 +2,19 @@ package com.piggymetrics.account.domain;
 
 import org.hibernate.validator.constraints.Length;
 
+import javax.validation.constraints.DecimalMin;
+import javax.validation.constraints.NotBlank;
 import javax.validation.constraints.NotNull;
 import java.math.BigDecimal;
 
 public class Item {
 
-	@NotNull
+	@NotBlank
 	@Length(min = 1, max = 20)
 	private String title;
 
 	@NotNull
+	@DecimalMin(value = "0.0")
 	private BigDecimal amount;
 
 	@NotNull
@@ -20,7 +23,7 @@ public class Item {
 	@NotNull
 	private TimePeriod period;
 
-	@NotNull
+	@NotBlank
 	private String icon;
 
 	public String getTitle() {

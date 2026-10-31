@@ -57,7 +57,7 @@ public class CustomUserInfoTokenServices implements ResourceServerTokenServices 
 	}
 
 	public void setAuthoritiesExtractor(AuthoritiesExtractor authoritiesExtractor) {
-		this.authoritiesExtractor = authoritiesExtractor;
+		this.authoritiesExtractor = authoritiesExtractor;	
 	}
 
 	@Override

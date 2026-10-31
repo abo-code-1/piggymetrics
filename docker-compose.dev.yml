@@ -60,3 +60,10 @@ services:
 
   turbine-stream-service:
     build: turbine-stream-service
+
+  zipkin:
+    image: openzipkin/zipkin-slim
+    ports:
+      - 9411:9411
+    environment:
+      JAVA_OPTS: "-Xms48m -Xmx192m"
