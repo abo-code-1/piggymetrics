@@ -5,10 +5,12 @@ import com.piggymetrics.account.domain.Currency;
 import com.piggymetrics.account.domain.Item;
 import com.piggymetrics.account.domain.Saving;
 import com.piggymetrics.account.domain.TimePeriod;
+import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.data.mongo.DataMongoTest;
+import org.springframework.dao.DuplicateKeyException;
 import org.springframework.test.context.junit4.SpringRunner;
 
 import java.math.BigDecimal;
@@ -16,6 +18,9 @@ import java.util.Arrays;
 import java.util.Date;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
 
 @RunWith(SpringRunner.class)
 @DataMongoTest
@@ -23,6 +28,26 @@ public class AccountRepositoryTest {
 
 	@Autowired
 	private AccountRepository repository;
+
+	@Before
+	public void cleanUp() {
+		repository.deleteAll();
+	}
+
+	@Test(expected = DuplicateKeyException.class)
+	public void shouldRejectDuplicateAccountName() {
+		repository.save(getStubAccount());
+		repository.save(getStubAccount());
+	}
+
+	@Test
+	public void shouldGenerateIdSeparateFromName() {
+		Account saved = repository.save(getStubAccount());
+
+		assertNotNull(saved.getId());
+		assertNotEquals(saved.getName(), saved.getId());
+		assertTrue(repository.existsByName(saved.getName()));
+	}
 
 	@Test
 	public void shouldFindAccountByName() {

@@ -5,15 +5,17 @@ import com.piggymetrics.account.client.StatisticsServiceClient;
 import com.piggymetrics.account.domain.*;
 import com.piggymetrics.account.dto.AccountRequestDTO;
 import com.piggymetrics.account.dto.AccountResponseDTO;
+import com.piggymetrics.account.mapper.AccountMapper;
 import com.piggymetrics.account.repository.AccountRepository;
 import org.junit.Before;
 import org.junit.Test;
+import org.mapstruct.factory.Mappers;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.mockito.Spy;
 
 import java.math.BigDecimal;
 import java.util.Arrays;
-import java.util.Optional;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
@@ -34,6 +36,9 @@ public class AccountServiceTest {
 	@Mock
 	private AccountRepository repository;
 
+	@Spy
+	private AccountMapper accountMapper = Mappers.getMapper(AccountMapper.class);
+
 	@Before
 	public void setup() {
 		initMocks(this);
@@ -45,7 +50,7 @@ public class AccountServiceTest {
 		final Account account = new Account();
 		account.setName("test");
 
-		when(repository.findById(account.getName())).thenReturn(Optional.of(account));
+		when(repository.findByName(account.getName())).thenReturn(account);
 		AccountResponseDTO found = accountService.findByName(account.getName());
 
 		assertEquals(account.getName(), found.getName());
@@ -74,6 +79,16 @@ public class AccountServiceTest {
 
 		verify(authClient, times(1)).createUser(user);
 		verify(repository, times(1)).save(any(Account.class));
+	}
+
+	@Test(expected = IllegalArgumentException.class)
+	public void shouldFailWhenAccountNameAlreadyExists() {
+
+		User user = new User();
+		user.setUsername("test");
+
+		when(repository.existsByName("test")).thenReturn(true);
+		accountService.create(user);
 	}
 
 	@Test
@@ -109,7 +124,7 @@ public class AccountServiceTest {
 
 		final Account account = new Account();
 
-		when(repository.findById("test")).thenReturn(Optional.of(account));
+		when(repository.findByName("test")).thenReturn(account);
 		accountService.saveChanges("test", update);
 
 		assertEquals(update.getNote(), account.getNote());
@@ -147,7 +162,7 @@ public class AccountServiceTest {
 				.expenses(Arrays.asList(new Item()))
 				.build();
 
-		when(repository.findById("test")).thenReturn(Optional.empty());
+		when(repository.findByName("test")).thenReturn(null);
 		accountService.saveChanges("test", update);
 	}
 }

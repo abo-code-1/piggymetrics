@@ -6,6 +6,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import org.springframework.data.annotation.Id;
+import org.springframework.data.mongodb.core.index.Indexed;
 import org.springframework.data.mongodb.core.mapping.Document;
 
 import javax.validation.Valid;
@@ -21,6 +22,9 @@ import java.util.List;
 public class Account {
 
 	@Id
+	private String id;
+
+	@Indexed(unique = true)
 	private String name;
 
 	private Date lastSeen;

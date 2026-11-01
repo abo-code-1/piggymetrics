@@ -5,9 +5,9 @@
 print('dump start');
 
 db.accounts.update(
-    { "_id": "demo" },
+    { "name": "demo" },
     {
-    "_id": "demo",
+    "name": "demo",
     "lastSeen": new Date(),
     "note": "demo note",
     "expenses": [
