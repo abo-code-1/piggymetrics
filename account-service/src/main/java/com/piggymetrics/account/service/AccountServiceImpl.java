@@ -8,6 +8,7 @@ import com.piggymetrics.account.domain.Saving;
 import com.piggymetrics.account.domain.User;
 import com.piggymetrics.account.dto.AccountRequestDTO;
 import com.piggymetrics.account.dto.AccountResponseDTO;
+import com.piggymetrics.account.mapper.AccountMapper;
 import com.piggymetrics.account.repository.AccountRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -26,13 +27,17 @@ public class AccountServiceImpl implements AccountService {
 	private final StatisticsServiceClient statisticsClient;
 	private final  AuthServiceClient authClient;
 	private final AccountRepository repository;
+	private final AccountMapper accountMapper;
 
 	public AccountServiceImpl (@Qualifier("com.piggymetrics.account.client.StatisticsServiceClient") StatisticsServiceClient statisticsClient,
                                AuthServiceClient authClient,
-                               AccountRepository repository) {
+                               AccountRepository repository,
+                               AccountMapper accountMapper
+	) {
 		this.statisticsClient = statisticsClient;
 		this.authClient = authClient;
 		this.repository = repository;
+		this.accountMapper = accountMapper;
 	}
 	/**
 	 * {@inheritDoc}
@@ -40,9 +45,8 @@ public class AccountServiceImpl implements AccountService {
 	@Override
 	public AccountResponseDTO findByName(String accountName) {
 		Assert.hasLength(accountName);
-		return repository.findById(accountName)
-				.map(AccountResponseDTO::new)
-				.orElse(null);
+		Account account = repository.findByName(accountName);
+		return account == null ? null : new AccountResponseDTO(account);
 	}
 
 	/**
@@ -51,7 +55,7 @@ public class AccountServiceImpl implements AccountService {
 	@Override
 	public AccountResponseDTO create(User user) {
 
-		if (repository.existsById(user.getUsername())) {
+		if (repository.existsByName(user.getUsername())) {
 			throw new IllegalArgumentException("account already exists: " + user.getUsername());
 		}
 		authClient.createUser(user);
@@ -80,23 +84,18 @@ public class AccountServiceImpl implements AccountService {
 	 */
 	@Override
 	public AccountResponseDTO saveChanges(String name, AccountRequestDTO update) {
-		Account account = repository.findById(name)
-				.orElseThrow(() -> {
-					log.error("account {} not found", name);
-					return new IllegalArgumentException("account not found: " + name);
-				});
+		Account account = repository.findByName(name);
+		Assert.notNull(account, "account not found: " + name);
 
-		account.setIncomes(update.getIncomes());
-		account.setExpenses(update.getExpenses());
-		account.setSaving(update.getSaving());
-		account.setNote(update.getNote());
+		accountMapper.updateEntity(update, account);
 		account.setLastSeen(new Date());
+
 		repository.save(account);
 
 		log.debug("account {} changes has been saved", name);
 		statisticsClient.updateStatistics(name, account);
 
 		return new AccountResponseDTO(account);
-			
+
 	}
 }
