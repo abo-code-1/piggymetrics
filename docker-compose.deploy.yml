@@ -96,7 +96,6 @@ services:
       context: "./account-service"
   account-mongodb:
     environment:
-      INIT_DUMP: account-service-dump.js
       MONGODB_PASSWORD: "$MONGODB_PASSWORD"
     image: sqshq/piggymetrics-mongodb@sha256:8c22387dcadf4639b02ff6e9fbc3c5ca6126884134b900536d7f891d892a9ee3
     restart: always
